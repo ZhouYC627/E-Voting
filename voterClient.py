@@ -12,24 +12,28 @@ import sys, os
 import random
 
 voterId = 1000
-pk = {}
-sig_pk = {}
 
-VOTE_SIZE = 2
-RANDOM_SIZE = 14
 
 class Voter:
-    def __init__(self, n, eligible=True):
-        self.eligible = eligible
+    def __init__(self, voterId):
         
-        '''
+        self.pk = {}
+        self.sig_pk = {}
+        
+        with open(str(voterId)+'.pub', 'r') as f:
+            self.pk['n'] = int(f.readline())
+            self.pk['e'] = int(f.readline())
+            self.sig_pk['n'] = int(f.readline())
+            self.sig_pk['e'] = int(f.readline())
+        
+        n = self.sig_pk['n']
         while True:
             self.r = random.randint(2, n - 1)
             if gk.gcd(self.r, n) == 1:
                 break
-        '''
-        self.r = 37873806644082383478458252412751201524495315897618792659525329616769323318906
         
+
+
     def blindMessage(self, m, n, e):
          
          # m'= m * r^e
@@ -46,46 +50,47 @@ class Voter:
     def getEligibility(self):
         return self.eligible
 
-with open(str(voterId)+'.pub', 'r') as f:
-    pk['n'] = int(f.readline())
-    pk['e'] = int(f.readline())
-    sig_pk['n'] = int(f.readline())
-    sig_pk['e'] = int(f.readline())
-
-sig_pk = {'n': 53128908078574294373606002113429558723820542853806750777228868933504583592389, 'e': 3878595324844751204948065592472856792067471054963070252780930172866355538531}
-sig_sk = {'n': 53128908078574294373606002113429558723820542853806750777228868933504583592389, 'd': 44590113836575741656904861073097404271005280558578159274614812347102415668191}
 
 
-alice = Voter(sig_pk['n'])
-m = 54957808117987922404636758262565634049
-def blind(vote):
-    #m =  vote.to_bytes(VOTE_SIZE, sys.byteorder) + os.urandom(RANDOM_SIZE)
-    #m = int.from_bytes(m, sys.byteorder)
-    blindMessage = alice.blindMessage(m, sig_pk['n'], sig_pk['e'])
-    
-    bmFileName = str(voterId) + '.bm'
-    print(blindMessage)
-    with open(bmFileName, 'w') as fbm:
-        fbm.write(str(voterId) + '\n' + str(blindMessage))
-    # encrypte bline message with Alice's public key
-    myCrypt.encrypt(pk['n'], pk['e'], bmFileName, bmFileName + '.cip')
 
 
-def unblind(signedFileName):
-    with open(signedFileName, 'r') as signf:
-        signedMessage = int(signf.readline())
-    print(signedMessage)
+    def blind(self, vote):
 
-    signedMessage = alice.unwrapSignature(signedMessage, sig_pk['n'])
-    print(signedMessage)
-
-    ballot = 'ballot'
-    with open(ballot, 'w') as bf:
-        bf.write(str(m) + '\n' + str(signedMessage))
         
-#blind(1) 
-
-unblind('1000.sign')
+        self.m =  vote.to_bytes(gk.VOTE_SIZE, sys.byteorder) + os.urandom(gk.RANDOM_SIZE)
+        self.m = int.from_bytes(self.m, sys.byteorder)
+        blindMessage = alice.blindMessage(self.m, self.sig_pk['n'], self.sig_pk['e'])
+        
+        bmFileName = str(voterId) + '.bm'
+        print(blindMessage)
+        with open(bmFileName, 'w') as fbm:
+            fbm.write(str(voterId) + '\n' + str(blindMessage))
+        # encrypte bline message with Alice's public key
+        myCrypt.encrypt(self.pk['n'], self.pk['e'], bmFileName, bmFileName + '.cip')
+    
+    
+    def unblind(self, signedFileName):
+        with open(signedFileName, 'r') as signf:
+            signedMessage = int(signf.readline())
+        print(signedMessage)
+    
+        signedMessage = alice.unwrapSignature(signedMessage, self.sig_pk['n'])
+        print(signedMessage)
+    
+        ballot = 'ballot'
+        with open(ballot, 'w') as bf:
+            bf.write(str(self.m) + '\n' + str(signedMessage))
+            
+while True:
+    opCode = input()
+    
+    if opCode == '0':
+        alice = Voter(voterId) 
+        alice.blind(1) 
+    elif opCode == '1':
+        alice.unblind('1000.sign')
+    elif opCode == '9':
+        break
 
 
 

@@ -10,6 +10,9 @@ import blindSignature as bs
 from Crypto.PublicKey import RSA
 import genkeys as gk
 import myCrypt
+import sys
+
+
 #server = bs.Signer()
 KEY_SIZE =128
 opCode = 1
@@ -18,9 +21,7 @@ idCount = 1000
 names = {'Alice', 'Bob'}
 voters = {}
 
-#sig_pk, sig_sk = gk.generateKey()
-sig_pk = {'n': 53128908078574294373606002113429558723820542853806750777228868933504583592389, 'e': 3878595324844751204948065592472856792067471054963070252780930172866355538531}
-sig_sk = {'n': 53128908078574294373606002113429558723820542853806750777228868933504583592389, 'd': 44590113836575741656904861073097404271005280558578159274614812347102415668191}
+sig_pk, sig_sk = gk.generateKey()
 
 def register(personalInfo):
     if (personalInfo in names):
@@ -43,6 +44,10 @@ def register(personalInfo):
         
 def signMessage(message):
     return pow(message, sig_sk['d'], sig_sk['n'])
+
+def validBallot(m, signedMessage):
+    return m == pow(signedMessage, sig_pk['e'], sig_pk['n'])
+
 
 print("Please input Operation code:\n 0: register;\n 1: sign;\n 9: exit\n")
 while True:
@@ -78,19 +83,32 @@ while True:
         with open(str(voterId) + '.sign', 'w') as signf:
             signf.write(str(signMessage(blindMessage)))
             print("Signed to:" + str(voterId) + '.sign')
+            
+    elif opCode == '2':
+        with open('ballot', 'r') as bf:
+            m = int(bf.readline())
+            print(m)
+            signedMessage = int(bf.readline())
+            if validBallot(m, signedMessage):
+                print("valid ballot")
+            else:
+                print("invalid ballot")
+                continue
+        
+        v = m.to_bytes(gk.VOTE_SIZE + gk.RANDOM_SIZE, sys.byteorder)
+        v = int.from_bytes(v[:gk.VOTE_SIZE], sys.byteorder)
+        print(v)
+        
     
             
     elif opCode == '9':
         break
     print('.')
 
-def validBallot(m, signedMessage):
-    return m == pow(signedMessage, sig_pk['e'], sig_pk['n'])
 
-with open('ballot', 'r') as bf:
-    m = int(bf.readline())
-    signedMessage = int(bf.readline())
-    print(validBallot(m, signedMessage))
+
+        
+    
 
 
 

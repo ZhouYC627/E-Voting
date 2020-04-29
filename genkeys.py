@@ -9,6 +9,9 @@ from random import randrange
 import sys
 import os
 
+VOTE_SIZE = 2
+RANDOM_SIZE = 14
+
 def is_prime(n, k=128):
     """ Test if a number is prime
         Args:
